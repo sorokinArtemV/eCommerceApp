@@ -2,11 +2,10 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
+USER app
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
-
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
@@ -27,4 +26,11 @@ RUN dotnet publish "./ProductsService.API.csproj" -c $BUILD_CONFIGURATION -o /ap
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+ENV MYSQL_HOST=localhost
+ENV MYSQL_PASSWORD=mysql 
 ENTRYPOINT ["dotnet", "ProductsService.API.dll"]
+
+# base: подготовили контейнер, где приложение будет ЖИТЬ
+# build: собрали проект (сырые DLL + мусор)
+# publish: очистили, оптимизировали, создали минимальный артефакт
+# final: положили publish в base → получили маленький и чистый контейнер

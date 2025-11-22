@@ -9,7 +9,10 @@
     ports:
       - "5432:5432"
     volumes:
+      - ./sql/postgres-init:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
 
   mysql:
     image: mysql:8.4
@@ -23,9 +26,40 @@
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./sql/mysql-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ecommerce-network
+    hostname: mysql-host-productsmicroservice
+
+  products-microservice:
+    image: artemva/ecommerce-products-microservice:v1.0
+    environment:
+      - MYSQL_HOST=mysql-host-productsmicroservice
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    networks:
+      - ecommerce-network
+
+  users-microservice:
+    image: artemva/ecommerce-users-microservice:v1.0
+    environment:
+      - POSTGRES_HOST=users-service-db
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres
+    networks:
+      - ecommerce-network
+  
+networks:
+  ecommerce-network:
+    driver: bridge
 
 volumes:
   postgres_data:
-    external: true
-    name: ecommerceusersservice_postgres_data 
   mysql_data:
+
