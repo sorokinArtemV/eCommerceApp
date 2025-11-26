@@ -1,0 +1,32 @@
+﻿using DataAccessLayer.Repositories;
+using DataAccessLayer.RepositoryContracts;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
+
+namespace DataAccessLayer;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddDataAccessLayer(this IServiceCollection services, IConfiguration configuration)
+    {
+        // TODO: Add data layer services  into the IoC container
+        string connectionStringTemplate = configuration.GetConnectionString("MongoDb")!;
+        string connectionString = connectionStringTemplate
+            .Replace("$MONGO_HOST", Environment.GetEnvironmentVariable("MONGO_HOST"))
+            .Replace("$MONGO_PORT", Environment.GetEnvironmentVariable("MONGO_PORT"));
+
+        services.AddSingleton<IMongoClient>(new MongoClient(connectionString));
+
+        services.AddScoped(provider =>
+        {
+            IMongoClient client = provider.GetRequiredService<IMongoClient>();
+
+            return client.GetDatabase("OrdersDatabase");
+        });
+
+        services.AddScoped<IOrdersRepository, OrdersRepository>();
+
+        return services;
+    }
+}
