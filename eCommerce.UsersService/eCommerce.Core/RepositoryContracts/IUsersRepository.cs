@@ -16,4 +16,11 @@ public interface IUsersRepository
     /// Method to get user by email and password
     /// </summary>
     public Task<ApplicationUser?> GetUserByEmailAndPassword(string? email, string? password);
+
+    /// <summary>
+    /// Method to return user by its id
+    /// </summary>
+    /// <param name="userId">guid id</param>
+    /// <returns><see cref="ApplicationUser"/> or null</returns>
+    public Task<ApplicationUser?> GetUserByUserId(Guid? userId);
 }

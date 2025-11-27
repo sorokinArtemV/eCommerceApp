@@ -1,11 +1,11 @@
 ﻿services:
   postgres:
     image: postgres:16-alpine
-    container_name: users-service-db
+    container_name: users_postgres_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: users-service
+      POSTGRES_DB: users_db
     ports:
       - "5432:5432"
     volumes:
@@ -16,10 +16,10 @@
 
   mysql:
     image: mysql:8.4
-    container_name: products-service-mysql
+    container_name: products_mysql_db
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: products_service
+      MYSQL_DATABASE: products_db
       MYSQL_USER: mysql
       MYSQL_PASSWORD: mysql
     ports:
@@ -33,7 +33,7 @@
 
   mongo:
     image: mongo:latest
-    container_name: ecommerce-mongo
+    container_name: orders_mongo_db
     restart: always
     ports:
       - "27017:27017"
@@ -41,7 +41,7 @@
       - ecommerce-network
     volumes:
       - mongo_data:/data/db
-      - ./init.js:/docker-entrypoint-initdb.d/init.js:ro
+      - ./sql/mongo-init/init.js:/docker-entrypoint-initdb.d/init.js:ro
 
   products-microservice:
     image: artemva/ecommerce-products-microservice:v1.0
@@ -58,7 +58,7 @@
   users-microservice:
     image: artemva/ecommerce-users-microservice:v1.0
     environment:
-      - POSTGRES_HOST=users-service-db
+      - POSTGRES_HOST=users_db
       - POSTGRES_PASSWORD=postgres
     ports:
       - "9090:9090"
