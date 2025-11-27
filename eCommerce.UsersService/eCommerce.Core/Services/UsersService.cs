@@ -37,4 +37,11 @@ public class UsersService : IUsersService
             ? null
             : _mapper.Map<AuthenticationResponse>(registeredUser) with { Success = true, Token = "token" };
     }
+
+    public async Task<UserDto?> GetUserById(Guid? userId)
+    {
+        ApplicationUser? user = await _usersRepository.GetUserByUserId(userId);
+
+        return user == null ? null : _mapper.Map<UserDto>(user);
+    }
 }
