@@ -37,7 +37,7 @@ export class RegisterComponent {
       const user = this.registerForm.value;
       this.usersService.register(user).subscribe({
         next: (response: AuthenticationResponse) => {
-          this.usersService.setAuthStatus(response.token, false, response.personName);
+          this.usersService.setAuthStatus(response, response.token, false, response.personName);
           this.router.navigate(['products', 'showcase']);
         },
         error: (error: any) => {

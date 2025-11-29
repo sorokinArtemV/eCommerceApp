@@ -22,7 +22,7 @@ public static class DependencyInjection
         {
             IMongoClient client = provider.GetRequiredService<IMongoClient>();
 
-            return client.GetDatabase("OrdersDatabase");
+            return client.GetDatabase(Environment.GetEnvironmentVariable("MONGO_DATABASE")!);
         });
 
         services.AddScoped<IOrdersRepository, OrdersRepository>();

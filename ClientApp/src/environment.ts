@@ -1,6 +1,7 @@
 // src/environments/environment.ts
 export const environment = {
     production: false,
-    apiUrl: 'https://localhost:7079/api/auth/', // API base URL for development,
-    productsMicroserviceUrl: 'https://localhost:7167/api/products/'
+    usersAPIURL: 'http://localhost:5000/api/',
+    productsAPIURL: 'http://localhost:6001/api/products/',
+    ordersAPIURL: 'http://localhost:7000/api/orders/',
   };

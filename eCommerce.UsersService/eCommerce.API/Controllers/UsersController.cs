@@ -18,7 +18,7 @@ public class UsersController : ControllerBase
     [HttpGet("{userId:guid}")] // GET api/users/{userId}
     public async Task<IActionResult> GetUserByUserId(Guid? userId)
     {
-        if (userId != Guid.Empty)
+        if (userId == Guid.Empty)
         {
             return BadRequest("Invalid user id");
         }
@@ -29,7 +29,7 @@ public class UsersController : ControllerBase
         {
             return NotFound(userDto);
         }
-        
+
         return Ok(userDto);
     }
 }

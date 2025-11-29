@@ -28,6 +28,9 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 ENV MYSQL_HOST=localhost
 ENV MYSQL_PASSWORD=mysql 
+ENV MYSQL_USER=mysql
+ENV MYSQL_DATABASE=products_db
+ENV MYSQL_PORT=3306
 ENTRYPOINT ["dotnet", "ProductsService.API.dll"]
 
 # base: подготовили контейнер, где приложение будет ЖИТЬ

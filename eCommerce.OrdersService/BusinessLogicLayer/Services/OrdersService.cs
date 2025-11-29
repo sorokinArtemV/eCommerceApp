@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.DTO;
+using BusinessLogicLayer.HttpClients;
 using BusinessLogicLayer.ServiceContracts;
 using BusinessLogicLayer.Validators;
 using DataAccessLayer.Entities;
@@ -18,9 +19,20 @@ public sealed class OrdersService : IOrdersService
     private readonly IValidator<OrderUpdateRequest> _orderUpdateRequestValidator;
     private readonly IValidator<OrderItemAddRequest> _orderItemAddRequestValidator;
     private readonly IValidator<OrderItemUpdateRequest> _orderItemUpdateRequestValidator;
+    private readonly UsersMicroServiceClient _usersMicroServiceClient;
+    private readonly ProductsMicroserviceClient _productsMicroserviceClient;
+    private readonly OrderEnricher _orderProductEnricher;
 
-
-    public OrdersService(IOrdersRepository ordersRepository, IMapper mapper, IValidator<OrderAddRequest> orderAddRequestValidator, IValidator<OrderUpdateRequest> orderUpdateRequestValidator, IValidator<OrderItemAddRequest> orderItemAddRequestValidator, IValidator<OrderItemUpdateRequest> orderItemUpdateRequestValidator)
+    public OrdersService(
+        IOrdersRepository ordersRepository,
+        IMapper mapper,
+        IValidator<OrderAddRequest> orderAddRequestValidator,
+        IValidator<OrderUpdateRequest> orderUpdateRequestValidator,
+        IValidator<OrderItemAddRequest> orderItemAddRequestValidator,
+        IValidator<OrderItemUpdateRequest> orderItemUpdateRequestValidator,
+        UsersMicroServiceClient usersMicroServiceClient,
+        ProductsMicroserviceClient productsMicroserviceClient,
+        OrderEnricher orderProductEnricher)
     {
         _ordersRepository = ordersRepository;
         _mapper = mapper;
@@ -28,6 +40,9 @@ public sealed class OrdersService : IOrdersService
         _orderUpdateRequestValidator = orderUpdateRequestValidator;
         _orderItemAddRequestValidator = orderItemAddRequestValidator;
         _orderItemUpdateRequestValidator = orderItemUpdateRequestValidator;
+        _usersMicroServiceClient = usersMicroServiceClient;
+        _productsMicroserviceClient = productsMicroserviceClient;
+        _orderProductEnricher = orderProductEnricher;
     }
 
     public async Task<OrderResponse?> AddOrderAsync(OrderAddRequest? orderAddRequest)
@@ -41,7 +56,26 @@ public sealed class OrdersService : IOrdersService
             throw new ValidationException(errors);
         }
 
-        // TODO: Add logic for checking if UserID exists in Users microservice
+        foreach (var orderItemAddRequest in orderAddRequest.OrderItems)
+        {
+            var orderItemValidationResult = await _orderItemAddRequestValidator.ValidateAsync(orderItemAddRequest);
+            if (!orderItemValidationResult.IsValid)
+            {
+                string errors = string.Join(", ",
+                    orderItemValidationResult.Errors.Select(x => x.ErrorMessage));
+                throw new ValidationException(errors);
+            }
+
+            _ = await _productsMicroserviceClient
+                 .GetProductByProductIdAsync(orderItemAddRequest.ProductID) ??
+                 throw new ArgumentException($"Product with ID {orderItemAddRequest.ProductID} does not exist.");
+        }
+
+        UserDto? userDto = await _usersMicroServiceClient.GetUserByIdAsync(orderAddRequest.UserID);
+        if (userDto is null)
+        {
+            throw new ArgumentException($"User with ID {orderAddRequest.UserID} does not exist.");
+        }
 
         Order orderInput = _mapper.Map<Order>(orderAddRequest);
 
@@ -54,7 +88,13 @@ public sealed class OrdersService : IOrdersService
 
         Order? addedOrder = await _ordersRepository.AddOrderAsync(orderInput);
 
-        return addedOrder is null ? null : _mapper.Map<OrderResponse>(addedOrder);
+        if (addedOrder is null)
+            return null;
+
+        OrderResponse addedOrderResponse = _mapper.Map<OrderResponse>(addedOrder);
+        await _orderProductEnricher.EnrichAsync(addedOrderResponse);
+
+        return addedOrderResponse;
     }
 
     public async Task<bool> DeleteOrderAsync(Guid orderId)
@@ -72,13 +112,18 @@ public sealed class OrdersService : IOrdersService
         Order? existingOrder = await _ordersRepository.GetOrderByConditionAsync(filter);
         if (existingOrder is null) return null;
 
-        return _mapper.Map<OrderResponse>(existingOrder);
+        OrderResponse orderResponse = _mapper.Map<OrderResponse>(existingOrder);
+        await _orderProductEnricher.EnrichAsync(orderResponse);
+
+        return orderResponse;
     }
 
     public async Task<List<OrderResponse?>> GetOrdersAsync()
     {
         IEnumerable<Order?> existingOrders = await _ordersRepository.GetOrdersAsync();
         IEnumerable<OrderResponse?> orderResponses = _mapper.Map<IEnumerable<OrderResponse>>(existingOrders);
+
+        await _orderProductEnricher.EnrichAsync(orderResponses);
 
         return orderResponses.ToList();
     }
@@ -88,26 +133,25 @@ public sealed class OrdersService : IOrdersService
         IEnumerable<Order?> existingOrders = await _ordersRepository.GetOrdersByConditionAsync(filter);
         IEnumerable<OrderResponse?> orderResponses = _mapper.Map<IEnumerable<OrderResponse>>(existingOrders);
 
+        await _orderProductEnricher.EnrichAsync(orderResponses);
+
         return orderResponses.ToList();
     }
 
     public async Task<OrderResponse?> UpdateOrderAsync(OrderUpdateRequest? orderUpdateRequest)
     {
-        if (orderUpdateRequest == null)
-        {
-            throw new ArgumentNullException(nameof(orderUpdateRequest));
-        }
-        
+        ArgumentNullException.ThrowIfNull(orderUpdateRequest);
+
         ValidationResult orderUpdateRequestValidationResult =
             await _orderUpdateRequestValidator.ValidateAsync(orderUpdateRequest);
-        
+
         if (!orderUpdateRequestValidationResult.IsValid)
         {
             string errors = string.Join(", ",
                 orderUpdateRequestValidationResult.Errors.Select(temp => temp.ErrorMessage));
             throw new ArgumentException(errors);
         }
-        
+
         foreach (OrderItemUpdateRequest orderItemUpdateRequest in orderUpdateRequest.OrderItems)
         {
             ValidationResult orderItemUpdateRequestValidationResult =
@@ -119,18 +163,27 @@ public sealed class OrdersService : IOrdersService
                     orderItemUpdateRequestValidationResult.Errors.Select(temp => temp.ErrorMessage));
                 throw new ArgumentException(errors);
             }
+
+            _ = await _productsMicroserviceClient
+                .GetProductByProductIdAsync(orderItemUpdateRequest.ProductID) ??
+                throw new ArgumentException($"Product with ID {orderItemUpdateRequest.ProductID} does not exist.");
         }
 
+        UserDto? userDto = await _usersMicroServiceClient.GetUserByIdAsync(orderUpdateRequest.UserID);
+        if (userDto is null)
+        {
+            throw new ArgumentException($"User with ID {orderUpdateRequest.UserID} does not exist.");
+        }
 
-        Order orderInput = _mapper.Map<Order>( orderUpdateRequest); 
-        
+        Order orderInput = _mapper.Map<Order>(orderUpdateRequest);
+
         foreach (OrderItem orderItem in orderInput.OrderItems)
         {
             orderItem.TotalPrice = orderItem.Quantity * orderItem.UnitPrice;
         }
 
         orderInput.TotalBill = orderInput.OrderItems.Sum(temp => temp.TotalPrice);
-        
+
         Order? updatedOrder = await _ordersRepository.UpdateOrderAsync(orderInput);
 
         if (updatedOrder == null)
@@ -139,6 +192,8 @@ public sealed class OrdersService : IOrdersService
         }
 
         OrderResponse updatedOrderResponse = _mapper.Map<OrderResponse>(updatedOrder);
+
+        await _orderProductEnricher.EnrichAsync(updatedOrderResponse);
 
         return updatedOrderResponse;
     }

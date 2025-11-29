@@ -104,6 +104,10 @@ body {
     overflow: hidden;
 }
 
+.inline-block {
+    display: inline-block;
+}
+
 .title-color {
     color: #3f51b5;
 }
@@ -111,6 +115,47 @@ body {
 .text-white {
     color: #ffffff !important
 }
+
+.text-blue {
+    color: #0954a5 !important
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.text-left {
+    text-align: left !important;
+}
+
+.text-bold {
+    font-weight: bold;
+}
+
+.border-top
+{
+    border-top: 1px solid #909090;
+}
+
+.border-bottom
+{
+    border-bottom: 1px solid #909090;
+}
+
+.border-left
+{
+    border-left: 1px solid #909090;
+}
+
+.border-right
+{
+    border-right: 1px solid #909090;
+}
+
 
 .hidden {
     display: none;
@@ -129,6 +174,12 @@ body {
     margin: auto;
 }
 
+.orders-user-details
+{
+    flex: 2; 
+    padding-left: 45px; 
+    padding-top: 5px;
+}
 
 .card-title {
     margin-bottom: 20px !important;
@@ -216,6 +267,11 @@ body {
     color: #605e5e;
 }
 
+.border-bottom {
+    padding-bottom: 5px;
+    border-bottom: 1px solid #000000;
+}
+
 .bold {
     font-weight: bold;
 }
@@ -236,11 +292,65 @@ body {
     margin-right: 5px;
 }
 
+.pt {
+    padding-top: 5px;
+}
+
+.pb {
+    padding-bottom: 5px;
+}
+
 a.mat-link:hover {
     color: #1565c0;
 }
 
-.mat-mdc-form-field
-{
-    margin-bottom: 10px;;
+.mat-mdc-form-field {
+    margin-bottom: 10px;
+    ;
+}
+
+.cartitem-quantity {
+    margin-bottom: 5px;
+}
+
+.order {
+    background-color: #ffffff;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table tr {}
+
+.table tr td {
+    padding: 6px 2px;
+    /* border-bottom: 1px solid #cccccc;
+    border-top: 1px solid #cccccc; */
+}
+
+.order-container {
+    background-color: #f0f0f0;
+}
+
+.order-details {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    flex: 1;
+}
+
+.order-items-list {
+    margin-bottom: 6px;
+    flex: 2;
+    padding: 0px 10px;
+}
+
+.order-number {
+    color: grey;
+    margin: 5px 3px 6px 12px;
 }

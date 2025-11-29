@@ -19,7 +19,7 @@
 
     <a mat-button [routerLink]="['/orders']" class="side-bar-button" routerLinkActive="active-link"
       *ngIf="usersService.isAuthenticated && usersService.isAdmin == false">
-      <mat-icon>bookmark_border</mat-icon>
+      <mat-icon>receipt</mat-icon>
       <span>Orders</span>
     </a>
 
@@ -27,6 +27,12 @@
       *ngIf="usersService.isAuthenticated && usersService.isAdmin">
       <mat-icon>folder</mat-icon>
       <span>Products</span>
+    </a>
+
+    <a mat-button [routerLink]="['/admin', 'orders']" class="side-bar-button" routerLinkActive="active-link"
+      *ngIf="usersService.isAuthenticated && usersService.isAdmin">
+      <mat-icon>receipt</mat-icon>
+      <span>Orders</span>
     </a>
 
     <span class="spacer"></span>
@@ -54,17 +60,18 @@
         </div>
       </form>
 
+      <a mat-button [routerLink]="['auth', 'register']" class="top-bar-button" routerLinkActive="active-link"
+        *ngIf="!usersService.isAuthenticated">
+        <mat-icon>person_add</mat-icon>
+        <span>Register</span>
+      </a>
+
       <a mat-button [routerLink]="['auth', 'login']" class="top-bar-button" routerLinkActive="active-link"
         *ngIf="!usersService.isAuthenticated">
         <mat-icon>person</mat-icon>
         <span>Login</span>
       </a>
 
-      <a mat-button [routerLink]="['auth', 'register']" class="top-bar-button" routerLinkActive="active-link"
-        *ngIf="!usersService.isAuthenticated">
-        <mat-icon>person_add</mat-icon>
-        <span>Register</span>
-      </a>
 
       <button *ngIf="usersService.isAuthenticated" mat-button class="ml">
         <mat-icon>person</mat-icon>

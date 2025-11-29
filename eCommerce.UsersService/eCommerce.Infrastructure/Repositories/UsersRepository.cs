@@ -51,14 +51,18 @@ internal sealed class UsersRepository : IUsersRepository
     public async Task<ApplicationUser?> GetUserByUserId(Guid? userId)
     {
         const string query = """
-                             SELECT *
+                             SELECT 
+                                 user_id     AS "UserId",
+                                 email       AS "Email",
+                                 person_name AS "PersonName",
+                                 gender      AS "Gender"
                              FROM public."Users"
-                             WHERE user_id = @user_id;
+                             WHERE user_id = @UserId;
                              """;
 
         ApplicationUser? user = await _dbContext.DbConnection.QueryFirstOrDefaultAsync<ApplicationUser>(
             query, new { UserId = userId });
-        
+
         return user;
     }
 }

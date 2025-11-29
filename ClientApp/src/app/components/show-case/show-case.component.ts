@@ -5,8 +5,10 @@ import { ProductResponse } from '../../models/product-response';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCardModule } from '@angular/material/card';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { UsersService } from '../../services/users.service';
+import { CartService } from '../../services/cart.service';
+import { CartItem } from '../../models/cart-item';
 
 @Component({
   selector: 'app-show-case',
@@ -18,7 +20,7 @@ import { UsersService } from '../../services/users.service';
 export class ShowCaseComponent {
   products: ProductResponse[] = [];
 
-  constructor(private productsService: ProductsService, public usersService: UsersService) {
+  constructor(private productsService: ProductsService, public usersService: UsersService, private cartService: CartService, private router: Router) {
   }
 
   ngOnInit(): void {
@@ -31,5 +33,20 @@ export class ShowCaseComponent {
         console.log(err);
       }
     });
+  }
+
+  addToCart(product: ProductResponse): void
+  {
+    var cartItem: CartItem = {
+      productId: product.productId,
+      productName: product.productName,
+      unitPrice: product.unitPrice,
+      quantity: 1,
+      category: product.category
+    };
+
+    this.cartService.addCartItem(cartItem);
+
+    this.router.navigate(["/cart"]);
   }
 }
