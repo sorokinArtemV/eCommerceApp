@@ -1,5 +1,5 @@
 export interface AuthenticationResponse {
-    userID: string;
+    userId: string;
     personName: string;
     email: string;
     gender: string;

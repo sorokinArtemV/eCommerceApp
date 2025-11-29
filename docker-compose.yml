@@ -1,78 +1,191 @@
 ﻿services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: users_postgres_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: users_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./sql/postgres-init:/docker-entrypoint-initdb.d
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - ecommerce-network
+  orders-microservice.api:
+    image: orders-microservice
+    build:
+      context: .
+      dockerfile: OrdersService.API/Dockerfile
 
-  mysql:
-    image: mysql:8.4
-    container_name: products_mysql_db
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: products_db
-      MYSQL_USER: mysql
-      MYSQL_PASSWORD: mysql
+      - MONGO_HOST=mongodb-container
+      - MONGO_PORT=27017
+      - MONGO_DATABASE=OrdersDatabase
+      - UsersMicroserviceName=users-microservice
+      - UsersMicroservicePort=5000
+    ports:
+      - "7000:8080"
+    networks:
+      - orders-mongodb-network
+      - ecommerce-network
+    depends_on:
+      - mongodb-container
+
+  mongodb-container:
+    image: mongo:latest
+    container_name: mongodb-container
+    ports:
+      - "27017:27017"
+    volumes:
+      - ../sql/mongo-init/init.js:/docker-entrypoint-initdb.d/init.js:ro
+      - mongo-data:/data/db 
+    networks:
+      - orders-mongodb-network
+
+  products-microservice:
+    image: products-microservice:latest
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPENETCORE_HTTP_PORTS=8080
+      - MYSQL_HOST=mysql-container
+      - MYSQL_PASSWORD=mysql 
+      - MYSQL_USER=mysql
+      - MYSQL_DATABASE=products_db
+      - MYSQL_PORT=3306
+    ports:
+      - "6000:8080"
+    networks:
+      - products-mysql-network
+      - ecommerce-network
+    depends_on:
+      - mysql-container
+  
+  mysql-container:
+    image: mysql:latest
+    container_name: mysql-container
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_DATABASE=products_db
+      - MYSQL_USER=mysql
+      - MYSQL_PASSWORD=mysql
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./sql/mysql-init:/docker-entrypoint-initdb.d:ro
+      - ../sql/mysql-init:/docker-entrypoint-initdb.d:ro
+      - mysql-data:/var/lib/mysql
     networks:
-      - ecommerce-network
-    hostname: mysql-host-productsmicroservice
-
-  mongo:
-    image: mongo:latest
-    container_name: orders_mongo_db
-    restart: always
-    ports:
-      - "27017:27017"
-    networks:
-      - ecommerce-network
-    volumes:
-      - mongo_data:/data/db
-      - ./sql/mongo-init/init.js:/docker-entrypoint-initdb.d/init.js:ro
-
-  products-microservice:
-    image: artemva/ecommerce-products-microservice:v1.0
-    environment:
-      - MYSQL_HOST=mysql-host-productsmicroservice
-      - MYSQL_ROOT_PASSWORD=root
-    ports:
-      - "8080:8080"
-    depends_on:
-      - mysql
-    networks:
-      - ecommerce-network
+      - products-mysql-network
 
   users-microservice:
-    image: artemva/ecommerce-users-microservice:v1.0
+    image: users-microservice:latest
     environment:
-      - POSTGRES_HOST=users_db
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - POSTGRES_HOST=postgres-container
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=users_db
     ports:
-      - "9090:9090"
-    depends_on:
-      - postgres
+      - "5000:8080"
     networks:
+      - users-postgres-network
       - ecommerce-network
-  
+    depends_on:
+      - postgres-container
+
+  postgres-container:
+    image: postgres:latest
+    container_name: postgres-container
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=users_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../sql/postgres-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - users-postgres-network
+
 networks:
+  orders-mongodb-network:
+    driver: bridge
+  products-mysql-network:
+    driver: bridge
+  users-postgres-network:
+    driver: bridge
   ecommerce-network:
     driver: bridge
 
 volumes:
-  postgres_data:
-  mysql_data:
-  mongo_data:
+  mongo-data:
+  mysql-data:
+  postgres-data:
+
+# services:
+#   postgres:
+#     image: postgres:16-alpine
+#     container_name: users_postgres_db
+#     environment:
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: postgres
+#       POSTGRES_DB: users_db
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - ./sql/postgres-init:/docker-entrypoint-initdb.d
+#       - postgres_data:/var/lib/postgresql/data
+#     networks:
+#       - ecommerce-network
+
+#   mysql:
+#     image: mysql:8.4
+#     container_name: products_mysql_db
+#     environment:
+#       MYSQL_ROOT_PASSWORD: root
+#       MYSQL_DATABASE: products_db
+#       MYSQL_USER: mysql
+#       MYSQL_PASSWORD: mysql
+#     ports:
+#       - "3306:3306"
+#     volumes:
+#       - mysql_data:/var/lib/mysql
+#       - ./sql/mysql-init:/docker-entrypoint-initdb.d:ro
+#     networks:
+#       - ecommerce-network
+#     hostname: mysql-host-productsmicroservice
+
+#   mongo:
+#     image: mongo:latest
+#     container_name: orders_mongo_db
+#     restart: always
+#     ports:
+#       - "27017:27017"
+#     networks:
+#       - ecommerce-network
+#     volumes:
+#       - mongo_data:/data/db
+#       - ./sql/mongo-init/init.js:/docker-entrypoint-initdb.d/init.js:ro
+
+#   products-microservice:
+#     image: artemva/ecommerce-products-microservice:v1.0
+#     environment:
+#       - MYSQL_HOST=mysql-host-productsmicroservice
+#       - MYSQL_ROOT_PASSWORD=root
+#     ports:
+#       - "8080:8080"
+#     depends_on:
+#       - mysql
+#     networks:
+#       - ecommerce-network
+
+#   users-microservice:
+#     image: artemva/ecommerce-users-microservice:v1.0
+#     environment:
+#       - POSTGRES_HOST=users_db
+#       - POSTGRES_PASSWORD=postgres
+#     ports:
+#       - "9090:9090"
+#     depends_on:
+#       - postgres
+#     networks:
+#       - ecommerce-network
+  
+# networks:
+#   ecommerce-network:
+#     driver: bridge
+
+# volumes:
+#   postgres_data:
+#   mysql_data:
+#   mongo_data:
 

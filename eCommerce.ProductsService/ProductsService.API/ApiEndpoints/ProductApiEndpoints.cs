@@ -25,6 +25,11 @@ public static class ProductApiEndpoints
                 ProductResponse? productResponse = await productsService
                     .GetProductByConditionAsync(x => x.ProductId == productId);
 
+                if (productResponse is null)
+                {
+                    return Results.NotFound();
+                }
+                
                 return Results.Ok(productResponse);
             });
 

@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddAutoMapper(_ => { }, typeof(OrderAddRequestToOrderMappingProfile));
 
         services.AddScoped<IOrdersService, OrdersService>();
+        services.AddScoped<OrderEnricher>();
 
         return services;
     }

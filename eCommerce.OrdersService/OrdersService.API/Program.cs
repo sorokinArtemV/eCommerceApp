@@ -1,4 +1,5 @@
 using BusinessLogicLayer;
+using BusinessLogicLayer.HttpClients;
 using DataAccessLayer;
 using FluentValidation.AspNetCore;
 using OrdersService.API.Middleware;
@@ -24,6 +25,19 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(b =>
     b.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod();
 }));
 
+builder.Services.AddHttpClient<UsersMicroServiceClient>(client =>
+{
+    client.BaseAddress = new Uri($"http://" +
+        $"{builder.Configuration["UsersMicroserviceName"]}:" +
+        $"{builder.Configuration["UsersMicroservicePort"]}");
+});
+
+builder.Services.AddHttpClient<ProductsMicroserviceClient>(client =>
+{
+    client.BaseAddress = new Uri($"http://" +
+        $"{builder.Configuration["ProductsMicroserviceName"]}:" +
+        $"{builder.Configuration["ProductsMicroservicePort"]}");
+});
 
 var app = builder.Build();
 
@@ -38,7 +52,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 // Auth
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
