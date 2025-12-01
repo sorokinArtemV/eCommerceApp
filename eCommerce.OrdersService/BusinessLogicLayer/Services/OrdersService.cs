@@ -2,7 +2,6 @@
 using BusinessLogicLayer.DTO;
 using BusinessLogicLayer.HttpClients;
 using BusinessLogicLayer.ServiceContracts;
-using BusinessLogicLayer.Validators;
 using DataAccessLayer.Entities;
 using DataAccessLayer.RepositoryContracts;
 using FluentValidation;
@@ -67,8 +66,8 @@ public sealed class OrdersService : IOrdersService
             }
 
             _ = await _productsMicroserviceClient
-                 .GetProductByProductIdAsync(orderItemAddRequest.ProductID) ??
-                 throw new ArgumentException($"Product with ID {orderItemAddRequest.ProductID} does not exist.");
+                    .GetProductByProductIdAsync(orderItemAddRequest.ProductID) ??
+                throw new ArgumentException($"Product with ID {orderItemAddRequest.ProductID} does not exist.");
         }
 
         UserDto? userDto = await _usersMicroServiceClient.GetUserByIdAsync(orderAddRequest.UserID);
@@ -110,6 +109,7 @@ public sealed class OrdersService : IOrdersService
     public async Task<OrderResponse?> GetOrderByConditionAsync(FilterDefinition<Order> filter)
     {
         Order? existingOrder = await _ordersRepository.GetOrderByConditionAsync(filter);
+
         if (existingOrder is null) return null;
 
         OrderResponse orderResponse = _mapper.Map<OrderResponse>(existingOrder);
@@ -165,7 +165,7 @@ public sealed class OrdersService : IOrdersService
             }
 
             _ = await _productsMicroserviceClient
-                .GetProductByProductIdAsync(orderItemUpdateRequest.ProductID) ??
+                    .GetProductByProductIdAsync(orderItemUpdateRequest.ProductID) ??
                 throw new ArgumentException($"Product with ID {orderItemUpdateRequest.ProductID} does not exist.");
         }
 

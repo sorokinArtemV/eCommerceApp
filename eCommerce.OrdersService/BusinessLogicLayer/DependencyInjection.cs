@@ -3,13 +3,14 @@ using BusinessLogicLayer.ServiceContracts;
 using BusinessLogicLayer.Services;
 using BusinessLogicLayer.Validators;
 using FluentValidation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BusinessLogicLayer;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddBusinessLogicLayer(this IServiceCollection services)
+    public static IServiceCollection AddBusinessLogicLayer(this IServiceCollection services, IConfiguration config)
     {
         // TODO: Add business logic layer services into the IoC container
         services.AddValidatorsFromAssemblyContaining<OrderAddRequestValidator>();
@@ -18,6 +19,11 @@ public static class DependencyInjection
 
         services.AddScoped<IOrdersService, OrdersService>();
         services.AddScoped<OrderEnricher>();
+
+        services.AddStackExchangeRedisCache(opts =>
+        {
+            opts.Configuration = $"{config["REDIS_HOST"]}:{config["REDIS_PORT"]}";
+        });
 
         return services;
     }

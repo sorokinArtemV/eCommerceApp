@@ -1,8 +1,8 @@
 ﻿namespace BusinessLogicLayer.DTO;
 
 public record UserDto(
-    Guid userID,
+    Guid UserID,
     string Email,
     string PersonName,
     string Gender
-    );
+);

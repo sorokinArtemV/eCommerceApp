@@ -1,5 +1,6 @@
 using BusinessLogicLayer;
 using BusinessLogicLayer.HttpClients;
+using BusinessLogicLayer.Policies;
 using DataAccessLayer;
 using FluentValidation.AspNetCore;
 using OrdersService.API.Middleware;
@@ -8,12 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add DAL and BLL services
 builder.Services.AddDataAccessLayer(builder.Configuration);
-builder.Services.AddBusinessLogicLayer();
+builder.Services.AddBusinessLogicLayer(builder.Configuration);
 
 builder.Services.AddControllers();
 
 builder.Services.AddAutoMapper(_ => { }, typeof(Program));
 builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddSingleton<UsersMicroservicePolicies>();
+builder.Services.AddSingleton<ProductMicroservicePolicies>();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -25,18 +28,29 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(b =>
     b.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod();
 }));
 
+builder.Services.Configure<UsersPoliciesSettings>(builder.Configuration.GetSection("UsersPolicies"));
+
 builder.Services.AddHttpClient<UsersMicroServiceClient>(client =>
 {
     client.BaseAddress = new Uri($"http://" +
-        $"{builder.Configuration["UsersMicroserviceName"]}:" +
-        $"{builder.Configuration["UsersMicroservicePort"]}");
+                                 $"{builder.Configuration["UsersMicroserviceName"]}:" +
+                                 $"{builder.Configuration["UsersMicroservicePort"]}");
+}).AddPolicyHandler((sp, _) =>
+{
+    UsersMicroservicePolicies policies = sp.GetRequiredService<UsersMicroservicePolicies>();
+    return policies.AllPolicies;
 });
+
 
 builder.Services.AddHttpClient<ProductsMicroserviceClient>(client =>
 {
     client.BaseAddress = new Uri($"http://" +
-        $"{builder.Configuration["ProductsMicroserviceName"]}:" +
-        $"{builder.Configuration["ProductsMicroservicePort"]}");
+                                 $"{builder.Configuration["ProductsMicroserviceName"]}:" +
+                                 $"{builder.Configuration["ProductsMicroservicePort"]}");
+}).AddPolicyHandler((sp, _) =>
+{
+    ProductMicroservicePolicies policies = sp.GetRequiredService<ProductMicroservicePolicies>();
+    return policies.AllPolicies;
 });
 
 var app = builder.Build();
