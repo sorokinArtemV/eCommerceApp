@@ -26,33 +26,64 @@ public sealed class ProductsMicroserviceClient
 
     public async Task<ProductDto?> GetProductByProductIdAsync(Guid productId)
     {
-        try
-        {
-            string cacheKey = $"product:{productId}";
-            string? cachedProduct = await _cache.GetStringAsync(cacheKey);
+        string cacheKey = $"product:{productId}";
+        string? cachedProduct = await _cache.GetStringAsync(cacheKey);
 
-            if (cachedProduct != null)
+        if (cachedProduct != null)
+        {
+            try
             {
                 ProductDto? productFromCache = JsonSerializer.Deserialize<ProductDto>(cachedProduct);
-                return productFromCache;
-            }
 
-            HttpResponseMessage response = await _httpClient.GetAsync($"/api/products/search/product-id/{productId}");
+                if (productFromCache is not null)
+                {
+                    _logger.LogInformation("Product {ProductId} found in cache", productId);
+                    return productFromCache;
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Product {ProductId} not found in cache", productId);
+            }
+        }
+
+        try
+        {
+            HttpResponseMessage response =
+                await _httpClient.GetAsync($"/api/products/search/product-id/{productId}");
 
             if (!response.IsSuccessStatusCode)
             {
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                {
+                    ProductDto? productFromFallback = await response.Content.ReadFromJsonAsync<ProductDto>() ??
+                                                      throw new NotImplementedException(
+                                                          "Fallback policy was not implemented");
+                    return productFromFallback;
+                }
+
                 return response.StatusCode switch
                 {
                     HttpStatusCode.NotFound => null,
                     HttpStatusCode.BadRequest => throw new HttpRequestException("Bad request", null,
                         HttpStatusCode.BadRequest),
-                    _ => throw new HttpRequestException($"Http request failed with status code {response.StatusCode}")
+                    _ => throw new HttpRequestException(
+                        $"Http request failed with status code {response.StatusCode}")
                 };
             }
 
-            ProductDto? product = await response.Content.ReadFromJsonAsync<ProductDto>();
+            ProductDto? product = await response.Content.ReadFromJsonAsync<ProductDto>() ??
+                                  throw new ArgumentException("Invalid Product ID");
 
-            return product ?? throw new ArgumentException("Invalid Product ID");
+            string productJson = JsonSerializer.Serialize(product);
+
+            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(300))
+                .SetSlidingExpiration(TimeSpan.FromSeconds(100));
+
+            await _cache.SetStringAsync(cacheKey, productJson, options);
+
+            return product;
         }
         catch (BulkheadRejectedException ex)
         {

@@ -1,10 +1,10 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Text;
 using System.Text.Json;
 using BusinessLogicLayer.DTO;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Bulkhead;
-using Polly.Fallback;
 
 namespace BusinessLogicLayer.Policies;
 
@@ -26,13 +26,13 @@ public class ProductMicroservicePolicies
                 _logger.LogInformation("Fallback Policy triggered: the request failed");
 
                 ProductDto productDto = new ProductDto(ProductID: Guid.Empty,
-                    ProductName: "Default Product(fallback)",
-                    Category: "Default Category(fallback)",
+                    ProductName: "Temporarily Unavailable(fallback)",
+                    Category: "Temporarily Unavailable(fallback)",
                     UnitPrice: 0.0,
                     QuantityInStock: 0
                 );
 
-                return Task.FromResult(new HttpResponseMessage()
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
                 {
                     Content = new StringContent(JsonSerializer.Serialize(productDto),
                         Encoding.UTF8, "application/json")
