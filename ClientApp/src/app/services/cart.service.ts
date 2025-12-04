@@ -75,7 +75,7 @@ export class CartService {
         };
         this.cart.forEach(cartItem => {
             newOrderRequest.orderItems.push({
-                productID: cartItem.productId,
+                productId: cartItem.productId,
                 unitPrice: cartItem.unitPrice,
                 quantity: cartItem.quantity
             });

@@ -9,9 +9,9 @@ services:
       - MONGO_HOST=mongodb-container
       - MONGO_PORT=27017
       - MONGO_DATABASE=OrdersDatabase
-      - UsersMicroserviceName=users-microservice
-      - UsersMicroservicePort=9090
-      - ProductsMicroserviceName=products-microservice
+      - UsersMicroserviceName=api-gateway
+      - UsersMicroservicePort=8080
+      - ProductsMicroserviceName=api-gateway
       - ProductsMicroservicePort=8080
       - REDIS_HOST=redis-container
       - REDIS_PORT=6379
@@ -30,7 +30,7 @@ services:
       - "27017:27017"
     volumes:
       - ../sql/mongo-init/init.js:/docker-entrypoint-initdb.d/init.js:ro
-      - mongo-data:/data/db 
+      - mongo-data:/data/db
     networks:
       - orders-mongodb-network
 
@@ -40,7 +40,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPENETCORE_HTTP_PORTS=8080
       - MYSQL_HOST=mysql-container
-      - MYSQL_PASSWORD=mysql 
+      - MYSQL_PASSWORD=mysql
       - MYSQL_USER=mysql
       - MYSQL_DATABASE=products_db
       - MYSQL_PORT=3306
@@ -109,6 +109,17 @@ services:
       - ../sql/redis-cache:/data
     networks:
       - ecommerce-network
+  
+  api-gateway:
+    image: api-gateway
+    build:
+      dockerfile: ApiGateway/Dockerfile
+      context: .
+    ports:
+      - "4000:8080"
+    networks:
+      - ecommerce-network
+
 
 networks:
   orders-mongodb-network:

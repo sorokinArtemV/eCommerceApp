@@ -1,5 +1,5 @@
 export interface ProductUpdateRequest {
-    productID: string;
+    productId: string;
     productName: string;
     category: string;
     unitPrice: number;

@@ -50,7 +50,7 @@ public sealed class UsersMicroServiceClient
 
         try
         {
-            HttpResponseMessage response = await _httpClient.GetAsync($"/api/users/{userId}", cancellationToken);
+            HttpResponseMessage response = await _httpClient.GetAsync($"/gateway/users/{userId}", cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {

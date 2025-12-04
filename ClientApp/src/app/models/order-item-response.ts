@@ -1,5 +1,5 @@
 export interface OrderItemResponse {
-    productID: string;
+    productId: string;
     unitPrice: number;
     quantity: number;
     totalPrice: number;

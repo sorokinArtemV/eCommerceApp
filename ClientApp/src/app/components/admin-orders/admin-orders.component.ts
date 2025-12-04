@@ -41,7 +41,7 @@ export class AdminOrdersComponent {
           order.orderItems.forEach((orderItem : OrderItemResponse) => {
 
             var cartItem: CartItem = {
-              productId: orderItem.productID,
+              productId: orderItem.productId,
               productName: orderItem.productName,
               unitPrice: orderItem.unitPrice,
               quantity: orderItem.quantity,

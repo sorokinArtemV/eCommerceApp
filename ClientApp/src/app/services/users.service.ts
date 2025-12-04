@@ -10,6 +10,7 @@ import { environment } from '../../environment';
 })
 export class UsersService {
   private usersAPIURL: string = environment.usersAPIURL;
+
   public isAuthenticated: boolean = false;
   public isAdmin: boolean = false;
   public currentUserName: string | null = "";

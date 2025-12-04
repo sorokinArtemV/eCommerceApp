@@ -1,5 +1,5 @@
 export interface NewOrderItemRequest {
-    productID: string;
+    productId: string;
     unitPrice: number;
     quantity: number;
 }

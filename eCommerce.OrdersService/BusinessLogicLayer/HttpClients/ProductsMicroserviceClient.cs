@@ -50,7 +50,7 @@ public sealed class ProductsMicroserviceClient
         try
         {
             HttpResponseMessage response =
-                await _httpClient.GetAsync($"/api/products/search/product-id/{productId}");
+                await _httpClient.GetAsync($"/gateway/products/search/product-id/{productId}");
 
             if (!response.IsSuccessStatusCode)
             {
