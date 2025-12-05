@@ -15,6 +15,10 @@ services:
       - ProductsMicroservicePort=8080
       - REDIS_HOST=redis-container
       - REDIS_PORT=6379
+      - RabbitMQ_HostName=rabbitmq-container
+      - RabbitMQ_Port=5672
+      - RabbitMQ_UserName=guest
+      - RabbitMQ_Password=guest
     ports:
       - "7000:8080"
     networks:
@@ -44,6 +48,10 @@ services:
       - MYSQL_USER=mysql
       - MYSQL_DATABASE=products_db
       - MYSQL_PORT=3306
+      - RabbitMQ_HostName=rabbitmq-container
+      - RabbitMQ_Port=5672
+      - RabbitMQ_UserName=guest
+      - RabbitMQ_Password=guest
     ports:
       - "6001:8080"
     networks:
@@ -120,6 +128,17 @@ services:
     networks:
       - ecommerce-network
 
+  rabbitmq-container:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-container
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - ecommerce-network
 
 networks:
   orders-mongodb-network:
