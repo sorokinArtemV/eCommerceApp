@@ -22,10 +22,15 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 // RabbitMQ
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMQ"));
-builder.Services.AddSingleton<IRabbitMqConnectionAccessor, RabbitMqConnectionService>();
 
-builder.Services.AddSingleton<IHostedService>(sp =>
-    (RabbitMqConnectionService)sp.GetRequiredService<IRabbitMqConnectionAccessor>());
+builder.Services.AddSingleton<RabbitMqConnectionService>();
+
+builder.Services.AddSingleton<IRabbitMqConnectionAccessor>(sp =>
+    sp.GetRequiredService<RabbitMqConnectionService>());
+
+builder.Services.AddHostedService(sp =>
+    sp.GetRequiredService<RabbitMqConnectionService>());
+
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 
 // Swagger

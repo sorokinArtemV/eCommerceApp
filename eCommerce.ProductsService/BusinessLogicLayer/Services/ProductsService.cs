@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using AutoMapper;
 using BusinessLogicLayer.DTO;
+using BusinessLogicLayer.RabbitMQ;
 using BusinessLogicLayer.ServiceContracts;
 using DataAccessLayer.Entities;
 using DataAccessLayer.RepositoryContracts;
@@ -15,18 +16,21 @@ public sealed class ProductsService : IProductsService
     private readonly IProductsRepository _productsRepository;
     private readonly IValidator<ProductAddRequest> _productAddRequestValidator;
     private readonly IValidator<ProductUpdateRequest> _productUpdateRequestValidator;
+    private readonly IRabbitMqPublisher _publisher;
 
 
     public ProductsService(
         IMapper mapper,
         IProductsRepository productsRepository,
         IValidator<ProductAddRequest> productAddRequestValidator,
-        IValidator<ProductUpdateRequest> productUpdateRequestValidator)
+        IValidator<ProductUpdateRequest> productUpdateRequestValidator,
+        IRabbitMqPublisher publisher)
     {
         _mapper = mapper;
         _productsRepository = productsRepository;
         _productAddRequestValidator = productAddRequestValidator;
         _productUpdateRequestValidator = productUpdateRequestValidator;
+        _publisher = publisher;
     }
 
     public async Task<List<ProductResponse?>> GetProductsAsync()
@@ -72,14 +76,14 @@ public sealed class ProductsService : IProductsService
         return addedProduct == null ? null : _mapper.Map<ProductResponse>(addedProduct);
     }
 
-    public async Task<ProductResponse?> UpdateProductAsync(ProductUpdateRequest productAddRequest)
+    public async Task<ProductResponse?> UpdateProductAsync(ProductUpdateRequest productUpdateRequest)
     {
         Product? product = await _productsRepository
-            .GetProductByConditionAsync(x => x.ProductId == productAddRequest.ProductId);
+            .GetProductByConditionAsync(x => x.ProductId == productUpdateRequest.ProductId);
 
         ArgumentNullException.ThrowIfNull(product);
 
-        ValidationResult validationResult = await _productUpdateRequestValidator.ValidateAsync(productAddRequest);
+        ValidationResult validationResult = await _productUpdateRequestValidator.ValidateAsync(productUpdateRequest);
 
         if (!validationResult.IsValid)
         {
@@ -87,7 +91,22 @@ public sealed class ProductsService : IProductsService
             throw new ValidationException(errorMessages);
         }
 
-        Product productToUpdate = _mapper.Map<Product>(productAddRequest);
+        Product productToUpdate = _mapper.Map<Product>(productUpdateRequest);
+
+        bool isProductNameChanged = product.ProductName != productUpdateRequest.ProductName;
+
+        if (isProductNameChanged)
+        {
+            const string RoutingKey = "product.updated.name";
+
+            ProductNameUpdateMessage message = new ProductNameUpdateMessage(
+               ProductId: productUpdateRequest.ProductId,
+               NewProductName: productUpdateRequest.ProductName
+            );
+
+            await _publisher.PublishAsync(RoutingKey, message);
+        }
+
         Product? updatedProduct = await _productsRepository.UpdateProductAsync(productToUpdate);
 
         return updatedProduct == null ? null : _mapper.Map<ProductResponse>(updatedProduct);

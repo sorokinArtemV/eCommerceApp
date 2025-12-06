@@ -25,16 +25,7 @@ public class RabbitMqConnectionService : IHostedService, IRabbitMqConnectionAcce
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        ConnectionFactory factory = new()
-        {
-            HostName = _options.HostName,
-            Port = _options.Port,
-            VirtualHost = _options.VirtualHost,
-            UserName = _options.UserName,
-            Password = _options.Password
-        };
-
-        _connection = await factory.CreateConnectionAsync(cancellationToken);
+        _connection = await ConnectWithRetryAsync(cancellationToken);
         _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
         await _channel.ExchangeDeclareAsync(
@@ -93,5 +84,42 @@ public class RabbitMqConnectionService : IHostedService, IRabbitMqConnectionAcce
 
             await _connection.DisposeAsync();
         }
+    }
+
+    private async Task<IConnection> ConnectWithRetryAsync(CancellationToken cancellationToken)
+    {
+        ConnectionFactory factory = new()
+        {
+            HostName = _options.HostName,
+            Port = _options.Port,
+            VirtualHost = _options.VirtualHost,
+            UserName = _options.UserName,
+            Password = _options.Password
+        };
+
+        const int MaxAttempts = 10;
+        var delay = TimeSpan.FromSeconds(5);
+
+        Exception? lastException = null;
+
+        for (int attempt = 1; attempt <= MaxAttempts && !cancellationToken.IsCancellationRequested; attempt++)
+        {
+            try
+            {
+                return await factory.CreateConnectionAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+
+                if (attempt == MaxAttempts)
+                    break;
+
+                await Task.Delay(delay, cancellationToken);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Could not connect to RabbitMQ after {MaxAttempts} attempts.", lastException);
     }
 }

@@ -19,6 +19,7 @@ services:
       - RabbitMQ_Port=5672
       - RabbitMQ_UserName=guest
       - RabbitMQ_Password=guest
+      - RabbitMQ_Products_Exchange=products.exchange
     ports:
       - "7000:8080"
     networks:
@@ -42,16 +43,21 @@ services:
     image: products-microservice:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPENETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTP_PORTS=8080
       - MYSQL_HOST=mysql-container
       - MYSQL_PASSWORD=mysql
       - MYSQL_USER=mysql
       - MYSQL_DATABASE=products_db
       - MYSQL_PORT=3306
-      - RabbitMQ_HostName=rabbitmq-container
-      - RabbitMQ_Port=5672
-      - RabbitMQ_UserName=guest
-      - RabbitMQ_Password=guest
+      - RabbitMQ__HostName=rabbitmq-container
+      - RabbitMQ__Port=5672
+      - RabbitMQ__VirtualHost=/
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+      - RabbitMQ__Exchange=products.exchange
+      - RabbitMQ__ExchangeType=direct
+      - RabbitMQ__Queue=products-queue
+      - RabbitMQ__RoutingKey=product.updated.name
     ports:
       - "6001:8080"
     networks:
@@ -59,6 +65,7 @@ services:
       - ecommerce-network
     depends_on:
       - mysql-container
+      - rabbitmq-container
   
   mysql-container:
     image: mysql:latest

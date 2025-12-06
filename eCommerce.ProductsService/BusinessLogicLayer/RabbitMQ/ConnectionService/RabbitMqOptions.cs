@@ -2,6 +2,7 @@
 
 public class RabbitMqOptions
 {
+    public const string SectionName = "RabbitMq";
     public required string HostName { get; set; }
     public int Port { get; set; }
     public required string UserName { get; set; }
