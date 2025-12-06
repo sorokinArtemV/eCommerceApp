@@ -1,6 +1,6 @@
 using BusinessLogicLayer;
-using BusinessLogicLayer.RabbitMQ;
 using BusinessLogicLayer.RabbitMQ.ConnectionService;
+using BusinessLogicLayer.RabbitMQ.Publisher;
 using DataAccessLayer;
 using FluentValidation.AspNetCore;
 using ProductsService.API.ApiEndpoints;

@@ -4,7 +4,10 @@ namespace BusinessLogicLayer.RabbitMQ.ConnectionService;
 
 public interface IRabbitMqConnectionAccessor
 {
-    public IConnection Connection { get; }
-    public IChannel Channel { get; }
     RabbitMqOptions Options { get; }
+
+    /// <summary>
+    /// Возвращает живой канал. При необходимости пересоздаёт connection/канал.
+    /// </summary>
+    ValueTask<IChannel> GetChannelAsync(CancellationToken cancellationToken = default);
 }

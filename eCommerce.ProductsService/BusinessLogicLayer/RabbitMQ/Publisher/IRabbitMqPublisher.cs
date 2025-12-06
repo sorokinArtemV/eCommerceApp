@@ -1,4 +1,4 @@
-﻿namespace BusinessLogicLayer.RabbitMQ;
+﻿namespace BusinessLogicLayer.RabbitMQ.Publisher;
 
 public interface IRabbitMqPublisher
 {

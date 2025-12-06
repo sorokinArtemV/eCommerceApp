@@ -2,6 +2,7 @@
 using AutoMapper;
 using BusinessLogicLayer.DTO;
 using BusinessLogicLayer.RabbitMQ;
+using BusinessLogicLayer.RabbitMQ.Publisher;
 using BusinessLogicLayer.ServiceContracts;
 using DataAccessLayer.Entities;
 using DataAccessLayer.RepositoryContracts;
@@ -101,7 +102,8 @@ public sealed class ProductsService : IProductsService
 
             ProductNameUpdateMessage message = new ProductNameUpdateMessage(
                ProductId: productUpdateRequest.ProductId,
-               NewProductName: productUpdateRequest.ProductName
+               NewProductName: productUpdateRequest.ProductName,
+               PublishedAt: DateTimeOffset.UtcNow
             );
 
             await _publisher.PublishAsync(RoutingKey, message);

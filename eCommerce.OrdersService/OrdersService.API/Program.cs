@@ -1,6 +1,8 @@
-using BusinessLogicLayer;
+﻿using BusinessLogicLayer;
 using BusinessLogicLayer.HttpClients;
 using BusinessLogicLayer.Policies;
+using BusinessLogicLayer.RabbitMQ;
+using BusinessLogicLayer.RabbitMQ.ConnectionService;
 using DataAccessLayer;
 using FluentValidation.AspNetCore;
 using OrdersService.API.Middleware;
@@ -40,6 +42,23 @@ builder.Services.AddHttpClient<UsersMicroServiceClient>(client =>
     UsersMicroservicePolicies policies = sp.GetRequiredService<UsersMicroservicePolicies>();
     return policies.AllPolicies;
 });
+
+// RabbitMQ
+// 1. Опции
+builder.Services.Configure<RabbitMqOptions>(
+    builder.Configuration.GetSection("RabbitMq"));
+
+// 2. Connection service (singleton + hosted)
+builder.Services.AddSingleton<RabbitMqConnectionService>();
+
+builder.Services.AddSingleton<IRabbitMqConnectionAccessor>(sp =>
+    sp.GetRequiredService<RabbitMqConnectionService>());
+
+builder.Services.AddHostedService(sp =>
+    sp.GetRequiredService<RabbitMqConnectionService>());
+
+// 3. Consumer Orders
+builder.Services.AddHostedService<RabbitMqProductNameUpdateConsumer>();
 
 
 builder.Services.AddHttpClient<ProductsMicroserviceClient>(client =>

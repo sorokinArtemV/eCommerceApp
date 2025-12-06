@@ -2,7 +2,7 @@
 using RabbitMQ.Client;
 using System.Text.Json;
 
-namespace BusinessLogicLayer.RabbitMQ;
+namespace BusinessLogicLayer.RabbitMQ.Publisher;
 
 public class RabbitMqPublisher : IRabbitMqPublisher
 {
@@ -15,8 +15,8 @@ public class RabbitMqPublisher : IRabbitMqPublisher
 
     public async Task PublishAsync<T>(string routingKey, T message, CancellationToken cancellationToken = default)
     {
-        var channel = _accessor.Channel;
-        var options = _accessor.Options;
+        IChannel channel = await _accessor.GetChannelAsync(cancellationToken);
+        RabbitMqOptions options = _accessor.Options;
 
         byte[] body = JsonSerializer.SerializeToUtf8Bytes(message);
 
@@ -37,6 +37,5 @@ public class RabbitMqPublisher : IRabbitMqPublisher
             basicProperties: properties,
             body: body,
             cancellationToken: cancellationToken);
-
     }
 }
