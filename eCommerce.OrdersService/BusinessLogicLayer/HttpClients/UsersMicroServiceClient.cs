@@ -1,45 +1,101 @@
 ﻿using BusinessLogicLayer.DTO;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
 
 namespace BusinessLogicLayer.HttpClients;
 
 public sealed class UsersMicroServiceClient
 {
     private readonly HttpClient _httpClient;
+    private readonly ILogger<UsersMicroServiceClient> _logger;
+    private readonly IDistributedCache _cache;
 
-    public UsersMicroServiceClient(HttpClient httpClient)
+    public UsersMicroServiceClient(
+        HttpClient httpClient,
+        ILogger<UsersMicroServiceClient> logger,
+        IDistributedCache cache)
     {
         _httpClient = httpClient;
+        _logger = logger;
+        _cache = cache;
     }
 
     public async Task<UserDto?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage response = await _httpClient.GetAsync($"/api/users/{userId}", cancellationToken);
+        string cacheKey = $"user:{userId}";
+        string? cachedUser = await _cache.GetStringAsync(cacheKey, cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
+        if (cachedUser is not null)
         {
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            try
             {
-                return null;
+                UserDto? userFromCache = JsonSerializer.Deserialize<UserDto>(cachedUser);
+
+                if (userFromCache is not null)
+                {
+                    _logger.LogInformation("User {UserId} found in cache", userId);
+                    return userFromCache;
+                }
             }
-            else if (response.StatusCode == HttpStatusCode.BadRequest)
+            catch (JsonException ex)
             {
-                throw new HttpRequestException("Bad request", null, HttpStatusCode.BadRequest);
-            }
-            else
-            {
-                throw new HttpRequestException("Error retrieving user", null, response.StatusCode);
+                _logger.LogWarning(ex, "Failed to deserialize cached user {UserId}. Ignoring cache.", userId);
             }
         }
 
-        UserDto? user = await response.Content.ReadFromJsonAsync<UserDto>(cancellationToken: cancellationToken);
-
-        if (user is null)
+        try
         {
-            throw new ArgumentNullException("Invalid user id");
-        }
+            HttpResponseMessage response = await _httpClient.GetAsync($"/gateway/users/{userId}", cancellationToken);
 
-        return user;
+            if (!response.IsSuccessStatusCode)
+            {
+                return response.StatusCode switch
+                {
+                    HttpStatusCode.NotFound => null,
+                    HttpStatusCode.BadRequest => throw new HttpRequestException("Bad request", null,
+                        HttpStatusCode.BadRequest),
+                    _ => new UserDto(PersonName: "Temporarily Unavailable", Email: "Temporarily Unavailable",
+                        Gender: "Temporarily Unavailable", UserID: Guid.Empty)
+                };
+            }
+
+            UserDto? user = await response.Content.ReadFromJsonAsync<UserDto>(cancellationToken: cancellationToken)
+                            ?? throw new ArgumentException("Invalid User ID");
+
+            string userJson = JsonSerializer.Serialize(user);
+
+            DistributedCacheEntryOptions distributedCacheEntryOptions = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(5))
+                .SetSlidingExpiration(TimeSpan.FromMinutes(3));
+
+            await _cache.SetStringAsync(cacheKey, userJson, distributedCacheEntryOptions, cancellationToken);
+
+            return user;
+        }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogError(ex, "Request failed because of circuit breaker is in Open state");
+
+            return new UserDto(
+                PersonName: "Temporarily Unavailable(circuit breaker)",
+                Email: "Temporarily Unavailable(circuit breaker)",
+                Gender: "Temporarily Unavailable(circuit breaker)",
+                UserID: Guid.Empty);
+        }
+        catch (TimeoutRejectedException ex)
+        {
+            _logger.LogError(ex, "Request timed out");
+
+            return new UserDto(
+                PersonName: "Temporarily Unavailable(timeout)",
+                Email: "Temporarily Unavailable(timeout)",
+                Gender: "Temporarily Unavailable(timeout)",
+                UserID: Guid.Empty);
+        }
     }
 }

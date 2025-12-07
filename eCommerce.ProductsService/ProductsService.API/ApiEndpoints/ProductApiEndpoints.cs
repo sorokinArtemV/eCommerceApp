@@ -25,11 +25,15 @@ public static class ProductApiEndpoints
                 ProductResponse? productResponse = await productsService
                     .GetProductByConditionAsync(x => x.ProductId == productId);
 
+                // TO REMOVE: TESTING PURPOSES ONLY
+                // await Task.Delay(1000, ct);
+                // throw new NotImplementedException();
+
                 if (productResponse is null)
                 {
                     return Results.NotFound();
                 }
-                
+
                 return Results.Ok(productResponse);
             });
 

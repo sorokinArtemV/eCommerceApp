@@ -1,4 +1,4 @@
-services:
+﻿services:
   orders-microservice.api:
     image: orders-microservice.api:latest
     build:
@@ -9,10 +9,26 @@ services:
       - MONGO_HOST=mongodb-container
       - MONGO_PORT=27017
       - MONGO_DATABASE=OrdersDatabase
-      - UsersMicroserviceName=users-microservice
-      - UsersMicroservicePort=9090
-      - ProductsMicroserviceName=products-microservice
+      - UsersMicroserviceName=api-gateway
+      - UsersMicroservicePort=8080
+      - ProductsMicroserviceName=api-gateway
       - ProductsMicroservicePort=8080
+      - REDIS_HOST=redis-container
+      - REDIS_PORT=6379
+
+      - RabbitMQ__HostName=rabbitmq-container
+      - RabbitMQ__Port=5672
+      - RabbitMQ__VirtualHost=/
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+
+      - RabbitMQ__Exchange=products.exchange
+      - RabbitMQ__ExchangeType=direct
+
+      - RabbitMqConsumer__Queues__0__Queue=orders.product-name-updated
+      - RabbitMqConsumer__Queues__0__RoutingKey=product.name.updated
+      - RabbitMqConsumer__Queues__1__Queue=orders.product-deleted
+      - RabbitMqConsumer__Queues__1__RoutingKey=product.deleted
     ports:
       - "7000:8080"
     networks:
@@ -28,7 +44,7 @@ services:
       - "27017:27017"
     volumes:
       - ../sql/mongo-init/init.js:/docker-entrypoint-initdb.d/init.js:ro
-      - mongo-data:/data/db 
+      - mongo-data:/data/db
     networks:
       - orders-mongodb-network
 
@@ -36,12 +52,22 @@ services:
     image: products-microservice:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPENETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTP_PORTS=8080
       - MYSQL_HOST=mysql-container
-      - MYSQL_PASSWORD=mysql 
+      - MYSQL_PASSWORD=mysql
       - MYSQL_USER=mysql
       - MYSQL_DATABASE=products_db
       - MYSQL_PORT=3306
+      - RabbitMQ__HostName=rabbitmq-container
+      - RabbitMQ__Port=5672
+      - RabbitMQ__VirtualHost=/
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+      - RabbitMQ__Exchange=products.exchange
+      - RabbitMQ__ExchangeType=direct
+      - RabbitMQ__RoutingKey=product.name.updated
+      - RabbitMqPublisher__Routes__ProductNameUpdated=product.name.updated
+      - RabbitMqPublisher__Routes__ProductDeleted=product.deleted
     ports:
       - "6001:8080"
     networks:
@@ -49,6 +75,7 @@ services:
       - ecommerce-network
     depends_on:
       - mysql-container
+      - rabbitmq-container
   
   mysql-container:
     image: mysql:latest
@@ -97,6 +124,38 @@ services:
       - ../sql/postgres-init:/docker-entrypoint-initdb.d:ro
     networks:
       - users-postgres-network
+
+  redis-container:
+    image: redis:latest
+    container_name: redis-container
+    ports:
+      - "6379:6379"
+    volumes:
+      - ../sql/redis-cache:/data
+    networks:
+      - ecommerce-network
+  
+  api-gateway:
+    image: api-gateway
+    build:
+      dockerfile: ApiGateway/Dockerfile
+      context: .
+    ports:
+      - "4000:8080"
+    networks:
+      - ecommerce-network
+
+  rabbitmq-container:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-container
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - ecommerce-network
 
 networks:
   orders-mongodb-network:

@@ -37,17 +37,14 @@ public sealed class OrderEnricher
     /// <summary>
     /// Enrich a single order with product details
     /// </summary>
-    public Task EnrichAsync(OrderResponse order)
+    public Task EnrichAsync(OrderResponse? order)
     {
-        if (order is null)
-            return Task.CompletedTask;
-
-        return EnrichSingleOrderAsync(order);
+        return order is null ? Task.CompletedTask : EnrichSingleOrderAsync(order);
     }
 
-    private async Task EnrichSingleOrderAsync(OrderResponse order)
+    private async Task EnrichSingleOrderAsync(OrderResponse? order)
     {
-        if (order.OrderItems is null)
+        if (order?.OrderItems is null)
             return;
 
         foreach (var item in order.OrderItems)
