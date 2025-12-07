@@ -22,6 +22,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 // RabbitMQ
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.Configure<RabbitMqPublisherOptions>(
+    builder.Configuration.GetSection("RabbitMqPublisher"));
 
 builder.Services.AddSingleton<RabbitMqConnectionService>();
 

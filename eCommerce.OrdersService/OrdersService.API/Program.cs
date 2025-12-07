@@ -3,6 +3,7 @@ using BusinessLogicLayer.HttpClients;
 using BusinessLogicLayer.Policies;
 using BusinessLogicLayer.RabbitMQ;
 using BusinessLogicLayer.RabbitMQ.ConnectionService;
+using BusinessLogicLayer.RabbitMQ.RabbitMQOptions;
 using DataAccessLayer;
 using FluentValidation.AspNetCore;
 using OrdersService.API.Middleware;
@@ -48,6 +49,9 @@ builder.Services.AddHttpClient<UsersMicroServiceClient>(client =>
 builder.Services.Configure<RabbitMqOptions>(
     builder.Configuration.GetSection("RabbitMq"));
 
+builder.Services.Configure<RabbitMqConsumerOptions>(
+    builder.Configuration.GetSection("RabbitMqConsumer"));
+
 // 2. Connection service (singleton + hosted)
 builder.Services.AddSingleton<RabbitMqConnectionService>();
 
@@ -58,7 +62,7 @@ builder.Services.AddHostedService(sp =>
     sp.GetRequiredService<RabbitMqConnectionService>());
 
 // 3. Consumer Orders
-builder.Services.AddHostedService<RabbitMqProductNameUpdateConsumer>();
+builder.Services.AddHostedService<RabbitMqProductEventsConsumer>();
 
 
 builder.Services.AddHttpClient<ProductsMicroserviceClient>(client =>

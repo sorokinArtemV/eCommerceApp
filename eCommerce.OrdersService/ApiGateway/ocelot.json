@@ -10,14 +10,16 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Get", "Post", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Options"
+      ],
       "UpstreamScheme": "http",
-
       "FileCacheOptions": {
         "TtlSeconds": 30,
         "Region": "OrdersCache"
       },
-
       "QoSOptions": {
         "ExceptionsAllowedBeforeBreaking": 3,
         "DurationOfBreak": 5000,
@@ -40,7 +42,10 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
       "UpstreamScheme": "http"
     },
     {
@@ -52,7 +57,10 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
       "UpstreamScheme": "http"
     },
     {
@@ -64,7 +72,10 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
       "UpstreamScheme": "http"
     },
     {
@@ -76,7 +87,10 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
       "UpstreamScheme": "http"
     },
     {
@@ -88,10 +102,13 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Put", "Delete", "Options" ],
+      "UpstreamHttpMethod": [
+        "Put",
+        "Delete",
+        "Options"
+      ],
       "UpstreamScheme": "http"
     },
-
     // Products Microservice Routes
     {
       "UpstreamPathTemplate": "/gateway/products/",
@@ -102,9 +119,13 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Options"
+      ],
       "UpstreamScheme": "http",
-
       "QoSOptions": {
         "ExceptionsAllowedBeforeBreaking": 3,
         "DurationOfBreak": 5000,
@@ -119,7 +140,9 @@
         "Limit": 3,
         "Period": "1m",
         "PeriodTimespan": 30,
-        "ClientWhitelist": [ "Client1" ]
+        "ClientWhitelist": [
+          "Client1"
+        ]
       }
     },
     {
@@ -128,10 +151,13 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "products-microservice",
-          "Port": 8090
+          "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Delete", "Options" ],
+      "UpstreamHttpMethod": [
+        "Delete",
+        "Options"
+      ],
       "UpstreamScheme": "http"
     },
     {
@@ -143,7 +169,9 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Get" ],
+      "UpstreamHttpMethod": [
+        "Get"
+      ],
       "UpstreamScheme": "http"
     },
     {
@@ -155,10 +183,11 @@
           "Port": 8080
         }
       ],
-      "UpstreamHttpMethod": [ "Get" ],
+      "UpstreamHttpMethod": [
+        "Get"
+      ],
       "UpstreamScheme": "http"
     },
-
     // Users Microservice Routes
     {
       "UpstreamPathTemplate": "/gateway/users/{userid}/",
@@ -169,7 +198,9 @@
           "Port": 9090
         }
       ],
-      "UpstreamHttpMethod": [ "Get" ],
+      "UpstreamHttpMethod": [
+        "Get"
+      ],
       "UpstreamScheme": "http"
     },
     {
@@ -181,7 +212,10 @@
           "Port": 9090
         }
       ],
-      "UpstreamHttpMethod": [ "Post", "Options" ],
+      "UpstreamHttpMethod": [
+        "Post",
+        "Options"
+      ],
       "UpstreamScheme": "http"
     },
     {
@@ -193,7 +227,10 @@
           "Port": 9090
         }
       ],
-      "UpstreamHttpMethod": [ "Post", "Options" ],
+      "UpstreamHttpMethod": [
+        "Post",
+        "Options"
+      ],
       "UpstreamScheme": "http"
     }
   ],

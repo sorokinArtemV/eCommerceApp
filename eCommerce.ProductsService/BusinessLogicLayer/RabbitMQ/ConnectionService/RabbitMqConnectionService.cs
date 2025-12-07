@@ -71,7 +71,6 @@ public class RabbitMqConnectionService : IHostedService, IRabbitMqConnectionAcce
 
     private async Task ConfigureTopologyAsync(IChannel channel, CancellationToken cancellationToken)
     {
-        // Твоя же логика объявления exchange/queue/bindings.
         await channel.ExchangeDeclareAsync(
             exchange: _options.Exchange,
             type: _options.ExchangeType,

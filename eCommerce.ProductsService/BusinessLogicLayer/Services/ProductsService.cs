@@ -2,12 +2,14 @@
 using AutoMapper;
 using BusinessLogicLayer.DTO;
 using BusinessLogicLayer.RabbitMQ;
+using BusinessLogicLayer.RabbitMQ.ConnectionService;
 using BusinessLogicLayer.RabbitMQ.Publisher;
 using BusinessLogicLayer.ServiceContracts;
 using DataAccessLayer.Entities;
 using DataAccessLayer.RepositoryContracts;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.Extensions.Options;
 
 namespace BusinessLogicLayer.Services;
 
@@ -18,6 +20,8 @@ public sealed class ProductsService : IProductsService
     private readonly IValidator<ProductAddRequest> _productAddRequestValidator;
     private readonly IValidator<ProductUpdateRequest> _productUpdateRequestValidator;
     private readonly IRabbitMqPublisher _publisher;
+    private readonly RabbitMqOptions _options;
+
 
 
     public ProductsService(
@@ -25,13 +29,15 @@ public sealed class ProductsService : IProductsService
         IProductsRepository productsRepository,
         IValidator<ProductAddRequest> productAddRequestValidator,
         IValidator<ProductUpdateRequest> productUpdateRequestValidator,
-        IRabbitMqPublisher publisher)
+        IRabbitMqPublisher publisher,
+        IOptions<RabbitMqOptions> rabbitMqOptions)
     {
         _mapper = mapper;
         _productsRepository = productsRepository;
         _productAddRequestValidator = productAddRequestValidator;
         _productUpdateRequestValidator = productUpdateRequestValidator;
         _publisher = publisher;
+        _options = rabbitMqOptions.Value;
     }
 
     public async Task<List<ProductResponse?>> GetProductsAsync()
@@ -98,7 +104,6 @@ public sealed class ProductsService : IProductsService
 
         if (isProductNameChanged)
         {
-            const string RoutingKey = "product.updated.name";
 
             ProductNameUpdateMessage message = new ProductNameUpdateMessage(
                ProductId: productUpdateRequest.ProductId,
@@ -106,7 +111,7 @@ public sealed class ProductsService : IProductsService
                PublishedAt: DateTimeOffset.UtcNow
             );
 
-            await _publisher.PublishAsync(RoutingKey, message);
+            await _publisher.PublishNameUpdatedAsync(message);
         }
 
         Product? updatedProduct = await _productsRepository.UpdateProductAsync(productToUpdate);
@@ -121,6 +126,16 @@ public sealed class ProductsService : IProductsService
         if (product is null) return false;
 
         bool isDeleted = await _productsRepository.DeleteProductAsync(productId);
+
+        if (isDeleted)
+        {
+            ProductDeletedMessage message = new ProductDeletedMessage(
+               ProductId: productId,
+               PublishedAt: DateTimeOffset.UtcNow
+            );
+
+            await _publisher.PublishDeletedAsync(message);
+        }
 
         return isDeleted;
     }

@@ -2,5 +2,6 @@
 
 public interface IRabbitMqPublisher
 {
-    Task PublishAsync<T>(string routingKey, T message, CancellationToken cancellationToken = default);
+    public Task PublishNameUpdatedAsync(ProductNameUpdateMessage message, CancellationToken ct = default);
+    public Task PublishDeletedAsync(ProductDeletedMessage message, CancellationToken ct = default);
 }

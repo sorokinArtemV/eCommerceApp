@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using BusinessLogicLayer.RabbitMQ.RabbitMQOptions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
@@ -6,18 +7,22 @@ namespace BusinessLogicLayer.RabbitMQ.ConnectionService;
 
 public class RabbitMqConnectionService : IHostedService, IRabbitMqConnectionAccessor, IAsyncDisposable
 {
-    private readonly RabbitMqOptions _options;
     private readonly SemaphoreSlim _syncRoot = new(1, 1);
 
     private IConnection? _connection;
     private IChannel? _channel;
     private bool _disposed;
 
-    public RabbitMqOptions Options => _options;
+    public RabbitMqOptions Options { get; }
 
-    public RabbitMqConnectionService(IOptions<RabbitMqOptions> options)
+    public RabbitMqConsumerOptions ConsumerOptions { get; }
+
+    public RabbitMqConnectionService(
+        IOptions<RabbitMqOptions> options,
+        IOptions<RabbitMqConsumerOptions> consumerOptions)
     {
-        _options = options.Value;
+        ConsumerOptions = consumerOptions.Value;
+        Options = options.Value;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -71,20 +76,22 @@ public class RabbitMqConnectionService : IHostedService, IRabbitMqConnectionAcce
 
     private async Task ConfigureTopologyAsync(IChannel channel, CancellationToken cancellationToken)
     {
-        await channel.QueueDeclareAsync(
-            queue: _options.Queue,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null,
-            cancellationToken: cancellationToken);
+        foreach (var queueConfig in ConsumerOptions.Queues)
+        {
+            await channel.QueueDeclareAsync(
+                queue: queueConfig.Queue,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null,
+                cancellationToken: cancellationToken);
 
-        await channel.QueueBindAsync(
-            queue: _options.Queue,
-            exchange: _options.Exchange,
-            routingKey: _options.RoutingKey,
-            arguments: null,
-            cancellationToken: cancellationToken);
+            await channel.QueueBindAsync(
+                queue: queueConfig.Queue,
+                exchange: Options.Exchange,
+                routingKey: queueConfig.RoutingKey,
+                cancellationToken: cancellationToken);
+        }
     }
 
     private async Task CleanupAsync()
@@ -98,7 +105,6 @@ public class RabbitMqConnectionService : IHostedService, IRabbitMqConnectionAcce
             }
             catch
             {
-
             }
 
             await _channel.DisposeAsync();
@@ -125,11 +131,11 @@ public class RabbitMqConnectionService : IHostedService, IRabbitMqConnectionAcce
     {
         ConnectionFactory factory = new()
         {
-            HostName = _options.HostName,
-            Port = _options.Port,
-            VirtualHost = _options.VirtualHost,
-            UserName = _options.UserName,
-            Password = _options.Password,
+            HostName = Options.HostName,
+            Port = Options.Port,
+            VirtualHost = Options.VirtualHost,
+            UserName = Options.UserName,
+            Password = Options.Password,
             // heartbeat / tuning
         };
 
