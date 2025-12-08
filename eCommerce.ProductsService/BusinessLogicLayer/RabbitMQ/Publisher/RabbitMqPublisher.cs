@@ -1,4 +1,5 @@
 ﻿using BusinessLogicLayer.RabbitMQ.ConnectionService;
+using DataAccessLayer.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
@@ -23,11 +24,11 @@ public class RabbitMqPublisher : IRabbitMqPublisher
         _routes = publisherOptions.Value.Routes;
     }
 
-    public Task PublishNameUpdatedAsync(ProductNameUpdateMessage message, CancellationToken ct = default)
-    => PublishInternalAsync("ProductNameUpdated", message, ct);
+    public Task PublishProductUpdatedAsync(Product product, CancellationToken ct = default)
+    => PublishInternalAsync("ProductNameUpdated", product, ct);
 
-    public Task PublishDeletedAsync(ProductDeletedMessage message, CancellationToken ct = default)
-        => PublishInternalAsync("ProductDeleted", message, ct);
+    public Task PublishProductDeletedAsync(Product product, CancellationToken ct = default)
+        => PublishInternalAsync("ProductDeleted", product, ct);
 
     private async Task PublishInternalAsync<T>(string routeName, T message, CancellationToken cancellationToken = default)
     {

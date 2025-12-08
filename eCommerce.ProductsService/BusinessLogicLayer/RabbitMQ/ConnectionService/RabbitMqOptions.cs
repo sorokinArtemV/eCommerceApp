@@ -7,10 +7,10 @@ public class RabbitMqOptions
     public int Port { get; set; }
     public required string UserName { get; set; }
     public required string Password { get; set; }
-    public string VirtualHost { get; set; } = "/";
+    public required string VirtualHost { get; set; }
 
-    public string Exchange { get; set; } = "my-exchange";
-    public string ExchangeType { get; set; } = "direct";
-    public string Queue { get; set; } = "my-queue";
-    public string RoutingKey { get; set; } = "my-routing-key";
+    public required string Exchange { get; set; }
+    public required string ExchangeType { get; set; }
+    public required string Queue { get; set; }
+    public required string RoutingKey { get; set; }
 }

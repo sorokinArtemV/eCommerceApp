@@ -23,10 +23,11 @@
       - RabbitMQ__Password=guest
 
       - RabbitMQ__Exchange=products.exchange
-      - RabbitMQ__ExchangeType=direct
+      - RabbitMQ__ExchangeType=topic
 
       - RabbitMqConsumer__Queues__0__Queue=orders.product-name-updated
-      - RabbitMqConsumer__Queues__0__RoutingKey=product.name.updated
+      - RabbitMqConsumer__Queues__0__RoutingKey=product.#
+      #      - RabbitMqConsumer__Queues__0__RoutingKey=product.name.updated
       - RabbitMqConsumer__Queues__1__Queue=orders.product-deleted
       - RabbitMqConsumer__Queues__1__RoutingKey=product.deleted
     ports:
@@ -64,7 +65,7 @@
       - RabbitMQ__UserName=guest
       - RabbitMQ__Password=guest
       - RabbitMQ__Exchange=products.exchange
-      - RabbitMQ__ExchangeType=direct
+      - RabbitMQ__ExchangeType=topic
       - RabbitMQ__RoutingKey=product.name.updated
       - RabbitMqPublisher__Routes__ProductNameUpdated=product.name.updated
       - RabbitMqPublisher__Routes__ProductDeleted=product.deleted

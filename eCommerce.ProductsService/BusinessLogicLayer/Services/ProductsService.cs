@@ -10,6 +10,7 @@ using DataAccessLayer.RepositoryContracts;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.Extensions.Options;
+using Product = DataAccessLayer.Entities.Product;
 
 namespace BusinessLogicLayer.Services;
 
@@ -100,19 +101,7 @@ public sealed class ProductsService : IProductsService
 
         Product productToUpdate = _mapper.Map<Product>(productUpdateRequest);
 
-        bool isProductNameChanged = product.ProductName != productUpdateRequest.ProductName;
-
-        if (isProductNameChanged)
-        {
-
-            ProductNameUpdateMessage message = new ProductNameUpdateMessage(
-               ProductId: productUpdateRequest.ProductId,
-               NewProductName: productUpdateRequest.ProductName,
-               PublishedAt: DateTimeOffset.UtcNow
-            );
-
-            await _publisher.PublishNameUpdatedAsync(message);
-        }
+        await _publisher.PublishProductUpdatedAsync(productToUpdate);
 
         Product? updatedProduct = await _productsRepository.UpdateProductAsync(productToUpdate);
 
@@ -127,15 +116,7 @@ public sealed class ProductsService : IProductsService
 
         bool isDeleted = await _productsRepository.DeleteProductAsync(productId);
 
-        if (isDeleted)
-        {
-            ProductDeletedMessage message = new ProductDeletedMessage(
-               ProductId: productId,
-               PublishedAt: DateTimeOffset.UtcNow
-            );
-
-            await _publisher.PublishDeletedAsync(message);
-        }
+        await _publisher.PublishProductDeletedAsync(product);
 
         return isDeleted;
     }
