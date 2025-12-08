@@ -4,6 +4,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text.Json;
 using BusinessLogicLayer.RabbitMQ.RabbitMQOptions;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace BusinessLogicLayer.RabbitMQ;
 
@@ -11,15 +12,17 @@ public class RabbitMqProductEventsConsumer : BackgroundService
 {
     private readonly IRabbitMqConnectionAccessor _connectionAccessor;
     private readonly ILogger<RabbitMqProductEventsConsumer> _logger;
+    private readonly IDistributedCache _cache;
 
     private readonly JsonSerializerOptions _jsonOptions;
 
     public RabbitMqProductEventsConsumer(
         IRabbitMqConnectionAccessor connectionAccessor,
-        ILogger<RabbitMqProductEventsConsumer> logger)
+        ILogger<RabbitMqProductEventsConsumer> logger, IDistributedCache cache)
     {
         _connectionAccessor = connectionAccessor;
         _logger = logger;
+        _cache = cache;
 
         _jsonOptions = new JsonSerializerOptions
         {
@@ -60,39 +63,34 @@ public class RabbitMqProductEventsConsumer : BackgroundService
                 ReadOnlyMemory<byte> body = ea.Body;
                 var routingKey = ea.RoutingKey;
 
+                Product? product = JsonSerializer.Deserialize<Product>(body.Span, _jsonOptions);
+                if (product is null)
+                {
+                    throw new InvalidOperationException("Failed to deserialize ProductNameUpdateMessage");
+                }
+
                 switch (routingKey)
                 {
                     case "product.name.updated":
                     {
-                        var message = JsonSerializer.Deserialize<ProductNameUpdateMessage>(body.Span, _jsonOptions);
-                        if (message is null)
-                        {
-                            throw new InvalidOperationException("Failed to deserialize ProductNameUpdateMessage");
-                        }
+                        _logger.LogInformation(product.ToString());
 
-                        _logger.LogInformation(
-                            "Name updated: ProductId={ProductId}, NewName={NewName}, delivery took {DeliveryTime}",
-                            message.ProductId,
-                            message.NewProductName,
-                            DateTimeOffset.UtcNow - message.PublishedAt
-                        );
+                        string productJson = JsonSerializer.Serialize(product);
+
+                        DistributedCacheEntryOptions cacheOptions = new DistributedCacheEntryOptions()
+                            .SetAbsoluteExpiration(TimeSpan.FromSeconds(300))
+                            .SetSlidingExpiration(TimeSpan.FromSeconds(100));
+
+                        string cacheKey = $"product:{product.ProductId}";
+
+                        await _cache.SetStringAsync(cacheKey, productJson, cacheOptions, token: stoppingToken);
 
                         break;
                     }
 
                     case "product.deleted":
                     {
-                        var message = JsonSerializer.Deserialize<ProductDeletedMessage>(body.Span, _jsonOptions);
-                        if (message is null)
-                        {
-                            throw new InvalidOperationException("Failed to deserialize ProductDeletedMessage");
-                        }
-
-                        _logger.LogInformation(
-                            "Product deleted: ProductId={ProductId}, delivery took {DeliveryTime}",
-                            message.ProductId,
-                            DateTimeOffset.UtcNow - message.PublishedAt
-                        );
+                        _logger.LogInformation(product.ToString());
 
                         break;
                     }
@@ -107,6 +105,11 @@ public class RabbitMqProductEventsConsumer : BackgroundService
                     deliveryTag: ea.DeliveryTag,
                     multiple: false,
                     cancellationToken: stoppingToken);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "RabbitMQ message deserialization error. DeliveryTag={DeliveryTag}",
+                    ea.DeliveryTag);
             }
             catch (Exception ex)
             {
