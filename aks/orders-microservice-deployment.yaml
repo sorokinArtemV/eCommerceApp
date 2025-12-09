@@ -1,0 +1,71 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-microservice-deployment
+  namespace: ecommerce-namespace
+  labels:
+    app: orders-microservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-microservice
+  template:
+    metadata:
+      labels:
+        app: orders-microservice
+    spec:
+      containers:
+        - name: orders-microservice
+          image: artemcontainerregistry.azurecr.io/orders-microservice:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+
+            - name: MONGO_HOST
+              value: mongodb    
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MONGO_DATABASE
+              value: OrdersDatabase
+
+            - name: UsersMicroserviceName
+              value: api-gateway
+            - name: UsersMicroservicePort
+              value: "8080"
+            - name: ProductsMicroserviceName
+              value: api-gateway
+            - name: ProductsMicroservicePort
+              value: "8080"
+
+            - name: REDIS_HOST
+              value: redis          
+            - name: REDIS_PORT
+              value: "6379"
+
+            - name: RabbitMQ__HostName
+              value: rabbitmq       
+            - name: RabbitMQ__Port
+              value: "5672"
+            - name: RabbitMQ__VirtualHost
+              value: "/"
+            - name: RabbitMQ__UserName
+              value: guest
+            - name: RabbitMQ__Password
+              value: guest
+
+            - name: RabbitMQ__Exchange
+              value: products.exchange
+            - name: RabbitMQ__ExchangeType
+              value: topic
+
+            - name: RabbitMqConsumer__Queues__0__Queue
+              value: orders.product-name-updated
+            - name: RabbitMqConsumer__Queues__0__RoutingKey
+              value: "product.#"
+            - name: RabbitMqConsumer__Queues__1__Queue
+              value: orders.product-deleted
+            - name: RabbitMqConsumer__Queues__1__RoutingKey
+              value: product.deleted

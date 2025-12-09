@@ -135,6 +135,13 @@ public class RabbitMqConnectionService : IHostedService, IRabbitMqConnectionAcce
         {
             try
             {
+                Console.WriteLine($"Connection created. " +
+                    $"Host: {factory.HostName}, " +
+                    $"Port: {factory.Port}, " +
+                    $"Virtual Host: {factory.VirtualHost}, " +
+                    $"UserName: {factory.UserName}, " +
+                    $"Password: {factory.Password}");
+
                 return await factory.CreateConnectionAsync(cancellationToken);
             }
             catch (Exception ex)
