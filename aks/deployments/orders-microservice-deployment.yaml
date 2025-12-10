@@ -32,11 +32,11 @@ spec:
               value: OrdersDatabase
 
             - name: UsersMicroserviceName
-              value: api-gateway
+              value: apigateway
             - name: UsersMicroservicePort
               value: "8080"
             - name: ProductsMicroserviceName
-              value: api-gateway
+              value: apigateway
             - name: ProductsMicroservicePort
               value: "8080"
 
@@ -52,9 +52,15 @@ spec:
             - name: RabbitMQ__VirtualHost
               value: "/"
             - name: RabbitMQ__UserName
-              value: guest
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-admin-credentials
+                  key: username
             - name: RabbitMQ__Password
-              value: guest
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-admin-credentials
+                  key: password
 
             - name: RabbitMQ__Exchange
               value: products.exchange
